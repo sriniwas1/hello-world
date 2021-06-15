@@ -1,3 +1,24 @@
 To install the app on to EC2 install tomcat server or any VM we need plugin called deploy on container
 
 Goals and options: clean install package
+
+docker
+--------
+To deploy teh application on a container we need to install the publish over ssh plugin
+
+and on server edit /etc/ssh/sshd_config
+ and change passwordauthentication to yes
+
+restart the sshd service
+service ssh reload
+
+docker build -t simple-devops-project .
+
+docker run -d --name simple-devops-project-container -p 8080:8080 simple-devops-project
+
+docker exec -it simple-devops-project-container /bin/bash
+
+exec
+cd /home/dockeradmin;docker build -t simple-devops-project .;docker run -d --name simple-devops-project-container -p 8080:8080 simple-devops-project
+
+
