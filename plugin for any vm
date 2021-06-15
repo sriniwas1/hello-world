@@ -1,0 +1,3 @@
+To install the app on to EC2 install tomcat server or any VM we need plugin called deploy on container
+
+Goals and options: clean install package
