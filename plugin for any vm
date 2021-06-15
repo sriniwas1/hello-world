@@ -22,3 +22,99 @@ exec
 cd /home/dockeradmin;docker build -t simple-devops-project .;docker run -d --name simple-devops-project-container -p 8080:8080 simple-devops-project
 
 
+To install the app on to EC2 install tomcat server or any VM we need plugin called deploy on container
+
+Goals and options: clean install package
+
+docker
+--------
+To deploy teh application on a container we need to install the publish over ssh plugin
+
+and on server edit /etc/ssh/sshd_config
+ and change passwordauthentication to yes
+
+restart the sshd service
+service ssh reload
+
+docker build -t simple-devops-project .
+
+docker run -d --name simple-devops-project-container -p 8080:8080 simple-devops-project
+
+docker exec -it simple-devops-project-container /bin/bash
+
+exec
+cd /home/dockeradmin;docker build -t simple-devops-project .;docker run -d --name simple-devops-project-container -p 8080:8080 simple-devops-project
+
+ansible
+============
+[root@ip-172-31-43-112 ~]# ansible --version
+[DEPRECATION WARNING]: Ansible will require Python 3.8 or newer on the controller starting with Ansible 2.12. Current version: 2.7.18
+(default, Feb 18 2021, 06:07:59) [GCC 7.3.1 20180712 (Red Hat 7.3.1-12)]. This feature will be removed from ansible-core in version
+2.12. Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.
+ansible [core 2.11.1]
+  config file = None
+
+
+mkdir /etc/ansible/
+
+ vi /etc/ssh/ssh_config
+
+on docker host also create the ansadmin user
+ on ansible server
+cd /opt
+mkdir docker
+chown -R ansadmin:ansadmin /opt/docker
+
+ansible-playbook -i hosts 
+------------------------------------------------------------
+create-simple-devops-project.yml
+---
+- hosts: all
+  become: true
+
+  tasks:
+  - name: stop current running docker container
+    command: docker stop simple-devops-container
+    ignore_errors: yes
+
+  - name: remove stopped docker container
+    command: docker rm simple-devops-container
+    ignore_errors: yes
+
+  - name: remove current docker image
+    command: docker rmi shriniwaskomakula/simple-devops-image:latest
+    ignore_errors: yes
+
+  - name: pull the docker image
+    command: docker pull shriniwaskomakula/simple-devops-image:latest
+ 
+   - name: run the docker image container
+    command: docker run -d --name simple-devops-container -p 8080:8080 shriniwaskomakula/simple-devops-image:latest
+
+----------------------------------
+create-simple-devops-image.yml
+---
+- hosts: all
+  become: true
+
+  tasks:
+  - name: building docker image
+    command: docker build -t simple-devops-image .
+    args:
+      chdir: /opt/docker
+
+  - name: create a tag to image
+    command: docker tag simple-devops-image shriniwaskomakula/simple-devops-image
+
+  - name: push image on to dockerhub
+    command: docker push shriniwaskomakula/simple-devops-image
+
+  - name: remove docker images from ansible server
+    command: docker rmi simple-devops-image:latest
+    ignore_errors: yes
+
+ansible-playbook -i /opt/docker/hosts /opt/docker/create-simple-devops-image.yml --limit localhost;
+ansible-playbook -i /etc/ansible/hosts /opt/docker/create-simple-devops-project.yml --limit 172.31.5.186
+
+
+ansible-playbook -i /opt/docker/hosts /opt/docker/create-simple-devops-image.yml --limit localhost;
